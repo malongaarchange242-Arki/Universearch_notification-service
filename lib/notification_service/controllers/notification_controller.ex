@@ -4,16 +4,32 @@ defmodule NotificationService.Controllers.NotificationController do
   alias NotificationService.Services.NotificationService
 
   def index(conn, %{"user_id" => user_id}) do
-    notifications = NotificationService.get_user_notifications(String.to_integer(user_id))
-    json(conn, %{notifications: notifications})
+    current_user_id = conn.assigns[:current_user_id]
+
+    if current_user_id != user_id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Forbidden"})
+    else
+      notifications = NotificationService.get_user_notifications(user_id)
+      json(conn, %{notifications: notifications})
+    end
   end
 
   def index(conn, _params) do
-    notifications = NotificationService.list_notifications()
+    current_user_id = conn.assigns[:current_user_id]
+    notifications = NotificationService.get_user_notifications(current_user_id)
     json(conn, %{notifications: notifications})
   end
 
-  def create(conn, %{"notification" => notification_params}) do
+  def create(conn, params) do
+    notification_params =
+      case params do
+        %{"notification" => wrapped} when is_map(wrapped) -> wrapped
+        bare when is_map(bare) -> bare
+        _ -> %{}
+      end
+
     case NotificationService.create_notification(notification_params) do
       {:ok, notification} ->
         conn
@@ -28,16 +44,22 @@ defmodule NotificationService.Controllers.NotificationController do
   end
 
   def unread_count(conn, %{"user_id" => user_id}) do
-    count = NotificationService.unread_count(String.to_integer(user_id))
-    json(conn, %{unread_count: count})
+    current_user_id = conn.assigns[:current_user_id]
+
+    if current_user_id != user_id do
+      conn
+      |> put_status(:forbidden)
+      |> json(%{error: "Forbidden"})
+    else
+      count = NotificationService.unread_count(user_id)
+      json(conn, %{unread_count: count})
+    end
   end
 
   def mark_as_read(conn, %{"id" => notification_id}) do
-    # In a real app, you'd get user_id from authentication
-    # For now, we'll assume it's passed or extracted from conn
-    user_id = get_user_id_from_conn(conn) # You'll need to implement this
+    user_id = conn.assigns[:current_user_id]
 
-    case NotificationService.mark_as_read(String.to_integer(notification_id), user_id) do
+    case NotificationService.mark_as_read(notification_id, user_id) do
       {:ok, notification} ->
         json(conn, %{notification: notification})
 
@@ -46,12 +68,6 @@ defmodule NotificationService.Controllers.NotificationController do
         |> put_status(:unprocessable_entity)
         |> json(%{error: reason})
     end
-  end
-
-  defp get_user_id_from_conn(_conn) do
-    # Extract user_id from authentication token/session
-    # This is a placeholder - implement based on your auth system
-    1 # Default for testing
   end
 
   defp translate_errors(changeset) do

@@ -19,7 +19,7 @@ defmodule NotificationServiceWeb.UserSocket do
   def connect(%{"token" => token}, socket, _connect_info) do
     case verify_user(token) do
       {:ok, user_id} ->
-        {:ok, assign(socket, :user_id, user_id)}
+        {:ok, assign(socket, :user_id, to_string(user_id))}
 
       :error ->
         :error
@@ -46,21 +46,26 @@ defmodule NotificationServiceWeb.UserSocket do
   def id(socket), do: "user_socket:#{socket.assigns.user_id}"
 
   # Verify JWT token and extract user_id
-  # This uses Phoenix.Token for secure token verification
+  # Prefer identity-service JWT, then fall back to legacy Phoenix.Token.
   defp verify_user(token) do
-    try do
-      # Verify the token with our secret key
-      case Phoenix.Token.verify(NotificationServiceWeb.Endpoint, "user_socket_auth", token, max_age: 86400) do
-        {:ok, user_id} when is_integer(user_id) ->
-          {:ok, user_id}
-        {:ok, _invalid_payload} ->
-          :error
-        {:error, _reason} ->
-          :error
-      end
-    rescue
-      # Handle any unexpected errors during token verification
-      _error -> :error
+    case NotificationService.IdentityJwt.verify(token) do
+      {:ok, %{"id" => user_id}} when is_binary(user_id) ->
+        {:ok, user_id}
+
+      _ ->
+        try do
+          case Phoenix.Token.verify(NotificationServiceWeb.Endpoint, "user_socket_auth", token, max_age: 86400) do
+            {:ok, user_id} when is_integer(user_id) or is_binary(user_id) ->
+              {:ok, user_id}
+            {:ok, _invalid_payload} ->
+              :error
+            {:error, _reason} ->
+              :error
+          end
+        rescue
+          # Handle any unexpected errors during token verification
+          _error -> :error
+        end
     end
   end
 end

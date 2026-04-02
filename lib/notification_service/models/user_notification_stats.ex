@@ -3,7 +3,7 @@ defmodule NotificationService.Models.UserNotificationStats do
   import Ecto.Changeset
 
   schema "user_notification_stats" do
-    field :user_id, :integer
+    field :user_id, :string
     field :unread_count, :integer, default: 0
 
     timestamps()

@@ -13,7 +13,7 @@ defmodule NotificationService.Auth do
       "SFMyNTY.g2gDbQAA..."
 
   """
-  def generate_token(user_id) when is_integer(user_id) do
+  def generate_token(user_id) when is_integer(user_id) or is_binary(user_id) do
     Phoenix.Token.sign(NotificationServiceWeb.Endpoint, "user_socket_auth", user_id)
   end
 
@@ -33,7 +33,7 @@ defmodule NotificationService.Auth do
   def verify_token(token) do
     try do
       case Phoenix.Token.verify(NotificationServiceWeb.Endpoint, "user_socket_auth", token, max_age: 86400) do
-        {:ok, user_id} when is_integer(user_id) ->
+        {:ok, user_id} when is_integer(user_id) or is_binary(user_id) ->
           {:ok, user_id}
         _ ->
           :error

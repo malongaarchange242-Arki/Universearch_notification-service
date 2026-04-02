@@ -3,9 +3,10 @@ defmodule NotificationService.Models.Notification do
   import Ecto.Changeset
 
   schema "notifications" do
-    field :user_id, :integer
+    field :user_id, :string
     field :type, :string
     field :message, :string
+    field :data, :map, default: %{}
     field :read, :boolean, default: false
 
     timestamps()
@@ -13,7 +14,7 @@ defmodule NotificationService.Models.Notification do
 
   def changeset(notification, attrs) do
     notification
-    |> cast(attrs, [:user_id, :type, :message, :read])
+    |> cast(attrs, [:user_id, :type, :message, :data, :read])
     |> validate_required([:user_id, :type, :message])
   end
 end
