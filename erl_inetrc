@@ -1,0 +1,5 @@
+%% Local Erlang inet config for Windows environments where inet_gethost crashes.
+%% This avoids the native resolver helper and resolves localhost/file entries only.
+{lookup, [file]}.
+{inet6, false}.
+{host, {127, 0, 0, 1}, ["localhost", "DESKTOP-VHTVE21"]}.

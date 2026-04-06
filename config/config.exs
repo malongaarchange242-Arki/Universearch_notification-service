@@ -3,9 +3,6 @@ import Config
 config :notification_service,
   ecto_repos: [NotificationService.Repo]
 
-config :notification_service, NotificationService.Repo,
-  database: "notification_service_dev.db"
-
 config :notification_service, Oban,
   repo: NotificationService.Repo,
   plugins: [Oban.Plugins.Pruner],
