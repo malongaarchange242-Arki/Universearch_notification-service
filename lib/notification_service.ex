@@ -5,7 +5,8 @@ defmodule NotificationService.Application do
   def start(_type, _args) do
     children = [
       NotificationService.Repo,
-      # {Oban, Application.get_env(:oban, [])},
+      NotificationService.Push.AccessTokenCache,
+      {Oban, Application.get_env(:oban, [])},
       NotificationServiceWeb.Endpoint
     ]
 

@@ -18,7 +18,7 @@ defmodule NotificationService.MixProject do
   def application do
     [
       mod: {NotificationService.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :inets, :ssl]
     ]
   end
 

@@ -43,6 +43,31 @@ defmodule NotificationService.Controllers.NotificationController do
     end
   end
 
+  def broadcast(conn, params) do
+    notification_params =
+      case params do
+        %{"notification" => wrapped} when is_map(wrapped) -> wrapped
+        bare when is_map(bare) -> bare
+        _ -> %{}
+      end
+
+    case NotificationService.broadcast_notifications(notification_params) do
+      {:ok, result} ->
+        conn
+        |> put_status(:created)
+        |> json(%{
+          count: result.count,
+          notification_ids: Enum.map(result.notifications, & &1.id),
+          errors: result.errors
+        })
+
+      {:error, reasons} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: Enum.map(List.wrap(reasons), &inspect/1)})
+    end
+  end
+
   def unread_count(conn, %{"user_id" => user_id}) do
     current_user_id = conn.assigns[:current_user_id]
 

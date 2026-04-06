@@ -19,3 +19,8 @@ if config_env() == :prod do
     http: [port: String.to_integer(System.get_env("PORT") || "4000")],
     secret_key_base: secret_key_base
 end
+
+config :notification_service, NotificationService.Push.Providers.FCMV1,
+  project_id: System.get_env("FCM_PROJECT_ID"),
+  credentials_json: System.get_env("FCM_SERVICE_ACCOUNT_JSON"),
+  credentials_path: System.get_env("GOOGLE_APPLICATION_CREDENTIALS")
