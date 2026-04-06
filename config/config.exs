@@ -6,7 +6,7 @@ config :notification_service,
 config :notification_service, NotificationService.Repo,
   database: "notification_service_dev.db"
 
-config :oban,
+config :notification_service, Oban,
   repo: NotificationService.Repo,
   plugins: [Oban.Plugins.Pruner],
   queues: [default: 10, notifications: 50, fanout: 100, push_fanout: 50, push_delivery: 200]

@@ -14,16 +14,12 @@ config :notification_service, NotificationServiceWeb.Endpoint,
   secret_key_base: System.get_env("SECRET_KEY_BASE"),
   server: true
 
-config :oban,
+config :notification_service, Oban,
   repo: NotificationService.Repo,
   plugins: [
-    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 30},
-    {Oban.Plugins.Cron,
-     crontab: [
-       {"0 * * * *", NotificationService.Workers.NotificationCleanup}
-     ]}
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 30}
   ],
-  queues: [default: 10, notifications: 50, fanout: 100]
+  queues: [default: 10, notifications: 50, fanout: 100, push_fanout: 50, push_delivery: 200]
 
 config :logger,
   level: :info,
