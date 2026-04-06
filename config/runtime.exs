@@ -36,8 +36,12 @@ if config_env() == :prod do
   config :notification_service, NotificationService.Repo,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    ssl: ssl_enabled,
-    ssl_opts: ssl_opts
+    ssl:
+      if ssl_enabled do
+        ssl_opts
+      else
+        false
+      end
 
   secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
