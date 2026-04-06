@@ -1,9 +1,11 @@
 import Config
 
+ssl_enabled = System.get_env("DATABASE_SSL", "true") != "false"
+
 config :notification_service, NotificationService.Repo,
   url: System.get_env("DATABASE_URL"),
   pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-  ssl: System.get_env("DATABASE_SSL") == "true"
+  ssl: ssl_enabled
 
 config :notification_service, NotificationServiceWeb.Endpoint,
   url: [host: System.get_env("HOST", "localhost"), port: 80],
