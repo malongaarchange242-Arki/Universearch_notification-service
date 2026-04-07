@@ -4,15 +4,24 @@ defmodule NotificationService.Application do
   @impl true
   def start(_type, _args) do
     children =
-      [
-        NotificationService.Repo,
-        NotificationService.Push.AccessTokenCache,
-        NotificationServiceWeb.Endpoint
-      ]
+      [NotificationService.Repo]
+      |> maybe_add_runtime_children()
       |> maybe_add_oban()
 
     opts = [strategy: :one_for_one, name: NotificationService.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp maybe_add_runtime_children(children) do
+    if running_migrations?() do
+      children
+    else
+      children ++
+        [
+          NotificationService.Push.AccessTokenCache,
+          NotificationServiceWeb.Endpoint
+        ]
+    end
   end
 
   defp maybe_add_oban(children) do
@@ -29,5 +38,9 @@ defmodule NotificationService.Application do
 
   defp oban_enabled? do
     System.get_env("OBAN_ENABLED", "true") != "false"
+  end
+
+  defp running_migrations? do
+    System.get_env("RUNNING_MIGRATIONS", "false") in ["true", "1"]
   end
 end

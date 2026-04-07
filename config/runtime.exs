@@ -1,8 +1,26 @@
 import Config
 
 if config_env() == :prod do
+  server? =
+    System.get_env("PHX_SERVER") in ["true", "1"] ||
+      not is_nil(System.get_env("RELEASE_NAME"))
+
+  running_migrations? = System.get_env("RUNNING_MIGRATIONS") in ["true", "1"]
+  migration_pool_size = System.get_env("MIGRATION_POOL_SIZE") || "2"
+  migration_queue_target = System.get_env("MIGRATION_QUEUE_TARGET") || "60000"
+
   database_url =
-    System.get_env("DATABASE_URL") ||
+    System.get_env("MIGRATION_DATABASE_URL")
+      |> case do
+        nil ->
+          System.get_env("DATABASE_URL")
+
+        migration_url when running_migrations? ->
+          migration_url
+
+        _ ->
+          System.get_env("DATABASE_URL")
+      end ||
       raise "DATABASE_URL is missing"
 
   ssl_enabled = System.get_env("DATABASE_SSL", "true") != "false"
@@ -42,7 +60,17 @@ if config_env() == :prod do
 
   config :notification_service, NotificationService.Repo,
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    pool_size:
+      String.to_integer(
+        System.get_env("POOL_SIZE") ||
+          if(running_migrations?, do: migration_pool_size, else: "3")
+      ),
+    queue_target:
+      String.to_integer(
+        System.get_env("DB_QUEUE_TARGET") ||
+          if(running_migrations?, do: migration_queue_target, else: "15000")
+      ),
+    queue_interval: String.to_integer(System.get_env("DB_QUEUE_INTERVAL") || "2000"),
     prepare: :unnamed,
     ssl: repo_ssl
 
@@ -51,9 +79,12 @@ if config_env() == :prod do
       raise "SECRET_KEY_BASE is missing"
 
   config :notification_service, NotificationServiceWeb.Endpoint,
-    server: true,
     http: [port: String.to_integer(System.get_env("PORT") || "4000")],
     secret_key_base: secret_key_base
+
+  if server? do
+    config :notification_service, NotificationServiceWeb.Endpoint, server: true
+  end
 end
 
 config :notification_service, NotificationService.Push.Providers.FCMV1,
