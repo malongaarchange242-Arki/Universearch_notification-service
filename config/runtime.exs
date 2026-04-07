@@ -43,6 +43,7 @@ if config_env() == :prod do
   config :notification_service, NotificationService.Repo,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    prepare: :unnamed,
     ssl: repo_ssl
 
   secret_key_base =
