@@ -287,12 +287,18 @@ defmodule NotificationService.Push.Providers.FCMV1 do
   end
 
   defp decode_private_key(private_key_pem) do
-    [pem_entry] =
+    [pem_entry | _rest] =
       private_key_pem
-      |> String.to_charlist()
+      |> normalize_private_key_pem()
       |> :public_key.pem_decode()
 
     :public_key.pem_entry_decode(pem_entry)
+  end
+
+  defp normalize_private_key_pem(private_key_pem) do
+    private_key_pem
+    |> String.replace("\\n", "\n")
+    |> String.trim()
   end
 
   defp base64url_json(map) do
