@@ -26,6 +26,7 @@ defmodule NotificationServiceWeb.Router do
 
     get "/health", NotificationService.Controllers.HealthController, :check
     post "/health", NotificationService.Controllers.HealthController, :check
+    get "/notifications/health", NotificationService.Controllers.HealthController, :check
     post "/notifications", NotificationService.Controllers.NotificationController, :create
     post "/notifications/broadcast", NotificationService.Controllers.NotificationController, :broadcast
   end

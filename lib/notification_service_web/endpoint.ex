@@ -9,8 +9,8 @@ defmodule NotificationServiceWeb.Endpoint do
   plug Plug.Logger
 
   plug Plug.Parsers,
-    parsers: [:urlencoded, :multipart, :json],
-    pass: ["*/*"],
+    parsers: [:json],
+    pass: ["application/json"],
     json_decoder: Phoenix.json_library()
 
   plug NotificationServiceWeb.Router

@@ -21,6 +21,10 @@ config :notification_service, NotificationServiceWeb.Endpoint,
   url: [host: "localhost"],
   http: [port: 4000],
   secret_key_base: "your secret key base",
-  pubsub_server: NotificationService.PubSub
+  pubsub_server: NotificationService.PubSub,
+  render_errors: [
+    formats: [json: NotificationServiceWeb.ErrorJSON],
+    layout: false
+  ]
 
 import_config "#{config_env()}.exs"
