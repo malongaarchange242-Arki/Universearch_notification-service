@@ -5,6 +5,12 @@ defmodule NotificationServiceWeb.Endpoint do
     websocket: true,
     longpoll: false
 
+  plug Plug.Static,
+    at: "/",
+    from: :notification_service,
+    gzip: false,
+    only: ~w(images)
+
   plug Plug.RequestId
   plug Plug.Logger
 

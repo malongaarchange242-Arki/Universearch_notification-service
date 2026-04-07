@@ -79,6 +79,7 @@ defmodule NotificationService.Push.Providers.FCMV1 do
         title: Map.get(payload, :title),
         body: Map.get(payload, :body)
       }
+      |> maybe_put(:image, notification_image_url())
     end
   end
 
@@ -92,7 +93,8 @@ defmodule NotificationService.Push.Providers.FCMV1 do
           else: %{
             click_action: "FLUTTER_NOTIFICATION_CLICK",
             tag: Map.get(payload, :collapse_key),
-            channel_id: channel_id(notification)
+            channel_id: channel_id(notification),
+            image: notification_image_url()
           }
         )
     }
@@ -194,7 +196,7 @@ defmodule NotificationService.Push.Providers.FCMV1 do
     [
       versions: [:"tlsv1.2", :"tlsv1.3"],
       verify: :verify_peer,
-      cacerts: :public_key.cacerts_get(),
+      cacertfile: CAStore.file_path() |> String.to_charlist(),
       server_name_indication: String.to_charlist(host),
       customize_hostname_check: [
         match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
@@ -337,6 +339,13 @@ defmodule NotificationService.Push.Providers.FCMV1 do
       _ -> false
     end)
     |> Enum.into(%{})
+  end
+
+  defp notification_image_url do
+    case Keyword.get(config(), :notification_image_url) do
+      value when is_binary(value) and value != "" -> value
+      _ -> nil
+    end
   end
 
   defp config do
