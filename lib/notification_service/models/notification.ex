@@ -2,6 +2,26 @@ defmodule NotificationService.Models.Notification do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :user_id,
+             :type,
+             :title,
+             :message,
+             :data,
+             :read,
+             :delivery_types,
+             :priority,
+             :deep_link,
+             :collapse_key,
+             :silent,
+             :campaign_type,
+             :sponsor_id,
+             :inserted_at,
+             :updated_at
+           ]}
+
   @priorities ["high", "normal"]
   @campaign_types ["transactional", "engagement", "sponsored", "system"]
 

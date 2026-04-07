@@ -2,6 +2,21 @@ defmodule NotificationService.Models.NotificationEvent do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :notification_id,
+             :device_token_id,
+             :user_id,
+             :event_type,
+             :channel,
+             :provider,
+             :status,
+             :metadata,
+             :occurred_at,
+             :created_at
+           ]}
+
   @event_types ["queued", "sent", "delivered", "opened", "clicked", "failed", "token_invalid"]
   @channels ["push", "in_app"]
   @statuses ["queued", "success", "failed", "retryable", "cancelled"]

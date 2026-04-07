@@ -2,6 +2,25 @@ defmodule NotificationService.Models.DeviceToken do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {Jason.Encoder,
+           only: [
+             :id,
+             :user_id,
+             :token,
+             :platform,
+             :provider,
+             :user_type,
+             :interests,
+             :locale,
+             :device_id,
+             :last_seen_at,
+             :disabled_at,
+             :failure_count,
+             :last_error,
+             :metadata,
+             :created_at
+           ]}
+
   @platforms ["web", "android", "ios"]
   @providers ["fcm"]
 
