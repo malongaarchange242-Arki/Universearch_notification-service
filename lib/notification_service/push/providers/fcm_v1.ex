@@ -166,11 +166,12 @@ defmodule NotificationService.Push.Providers.FCMV1 do
 
   defp http_post(url, headers, content_type, body) do
     request = {String.to_charlist(url), headers, content_type, body}
+    ssl_options = ssl_options_for(url)
 
     options = [
       timeout: Keyword.get(config(), :recv_timeout_ms, 10_000),
       connect_timeout: Keyword.get(config(), :connect_timeout_ms, 5_000),
-      ssl: [{:versions, [:"tlsv1.2"]}]
+      ssl: ssl_options
     ]
 
     case :httpc.request(:post, request, options, body_format: :binary) do
@@ -181,6 +182,24 @@ defmodule NotificationService.Push.Providers.FCMV1 do
         Logger.error("FCM v1 transport error", reason: inspect(reason))
         {:error, {:transport_error, reason}}
     end
+  end
+
+  defp ssl_options_for(url) do
+    host =
+      case URI.parse(url) do
+        %URI{host: nil} -> "localhost"
+        %URI{host: value} -> value
+      end
+
+    [
+      versions: [:"tlsv1.2", :"tlsv1.3"],
+      verify: :verify_peer,
+      cacerts: :public_key.cacerts_get(),
+      server_name_indication: String.to_charlist(host),
+      customize_hostname_check: [
+        match_fun: :public_key.pkix_verify_hostname_match_fun(:https)
+      ]
+    ]
   end
 
   defp parse_success_json(status_code, response_body, _context) when status_code in 200..299 do
