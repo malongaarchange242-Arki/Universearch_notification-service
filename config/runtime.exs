@@ -78,10 +78,18 @@ if config_env() == :prod do
     System.get_env("SECRET_KEY_BASE") ||
       raise "SECRET_KEY_BASE is missing"
 
+  port =
+    case System.get_env("PORT") do
+      nil -> 4000
+      "" -> 4000
+      value -> String.to_integer(value)
+    end
+
   config :notification_service, NotificationServiceWeb.Endpoint,
     http: [
       ip: {0, 0, 0, 0},
-      port: String.to_integer(System.get_env("PORT") || "4000")
+      port: port,
+      transport_options: []
     ],
     secret_key_base: secret_key_base
 

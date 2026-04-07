@@ -33,8 +33,7 @@ config :notification_service, NotificationService.Repo,
 config :notification_service, NotificationServiceWeb.Endpoint,
   url: [host: System.get_env("HOST", "localhost"), port: 80],
   http: [
-    port: String.to_integer(System.get_env("PORT") || "4000"),
-    transport_options: [socket_opts: [:inet6]]
+    port: String.to_integer(System.get_env("PORT") || "4000")
   ],
   secret_key_base: System.get_env("SECRET_KEY_BASE"),
   server: server?
