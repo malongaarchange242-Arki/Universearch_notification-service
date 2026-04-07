@@ -9,7 +9,7 @@ defmodule NotificationService.Services.DeviceTokenService do
       attrs
       |> normalize_attrs()
       |> Map.put(:user_id, user_id)
-      |> Map.put_new(:last_seen_at, DateTime.utc_now() |> DateTime.truncate(:second))
+      |> Map.put_new(:last_seen_at, utc_now_usec())
       |> Map.put(:disabled_at, nil)
 
     %DeviceToken{}
@@ -29,7 +29,7 @@ defmodule NotificationService.Services.DeviceTokenService do
           disabled_at: nil,
           failure_count: 0,
           last_error: nil,
-          created_at: DateTime.utc_now() |> DateTime.truncate(:second)
+          created_at: utc_now_usec()
         ]
       ],
       conflict_target: :token,
@@ -60,7 +60,7 @@ defmodule NotificationService.Services.DeviceTokenService do
 
     device_token
     |> DeviceToken.changeset(%{
-      disabled_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      disabled_at: utc_now_usec(),
       failure_count: failure_count + 1,
       last_error: inspect(reason)
     })
@@ -70,7 +70,7 @@ defmodule NotificationService.Services.DeviceTokenService do
   def mark_success(%DeviceToken{} = device_token) do
     device_token
     |> DeviceToken.changeset(%{
-      last_seen_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      last_seen_at: utc_now_usec(),
       failure_count: 0,
       last_error: nil
     })
@@ -133,6 +133,10 @@ defmodule NotificationService.Services.DeviceTokenService do
   end
 
   defp normalize_datetime(_value), do: nil
+
+  defp utc_now_usec do
+    DateTime.utc_now() |> DateTime.truncate(:microsecond)
+  end
 
   defp maybe_filter(query, _field, nil), do: query
   defp maybe_filter(query, _field, ""), do: query

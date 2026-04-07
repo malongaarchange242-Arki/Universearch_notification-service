@@ -56,8 +56,12 @@ defmodule NotificationService.Models.NotificationEvent do
     |> validate_inclusion(:status, @statuses)
 
     case get_field(changeset, :occurred_at) do
-      nil -> put_change(changeset, :occurred_at, DateTime.utc_now() |> DateTime.truncate(:second))
+      nil -> put_change(changeset, :occurred_at, utc_now_usec())
       _ -> changeset
     end
+  end
+
+  defp utc_now_usec do
+    DateTime.utc_now() |> DateTime.truncate(:microsecond)
   end
 end
