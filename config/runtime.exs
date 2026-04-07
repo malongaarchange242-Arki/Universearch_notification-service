@@ -79,7 +79,10 @@ if config_env() == :prod do
       raise "SECRET_KEY_BASE is missing"
 
   config :notification_service, NotificationServiceWeb.Endpoint,
-    http: [port: String.to_integer(System.get_env("PORT") || "4000")],
+    http: [
+      ip: {0, 0, 0, 0},
+      port: String.to_integer(System.get_env("PORT") || "4000")
+    ],
     secret_key_base: secret_key_base
 
   if server? do
