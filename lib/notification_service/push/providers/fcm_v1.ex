@@ -79,7 +79,6 @@ defmodule NotificationService.Push.Providers.FCMV1 do
         title: Map.get(payload, :title),
         body: Map.get(payload, :body)
       }
-      |> maybe_put(:image, notification_image_url())
     end
   end
 
@@ -93,8 +92,7 @@ defmodule NotificationService.Push.Providers.FCMV1 do
           else: %{
             click_action: "FLUTTER_NOTIFICATION_CLICK",
             tag: Map.get(payload, :collapse_key),
-            channel_id: channel_id(notification),
-            image: notification_image_url()
+            channel_id: channel_id(notification)
           }
         )
     }
@@ -339,13 +337,6 @@ defmodule NotificationService.Push.Providers.FCMV1 do
       _ -> false
     end)
     |> Enum.into(%{})
-  end
-
-  defp notification_image_url do
-    case Keyword.get(config(), :notification_image_url) do
-      value when is_binary(value) and value != "" -> value
-      _ -> nil
-    end
   end
 
   defp config do
