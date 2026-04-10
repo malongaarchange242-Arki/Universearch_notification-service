@@ -63,12 +63,12 @@ if config_env() == :prod do
     pool_size:
       String.to_integer(
         System.get_env("POOL_SIZE") ||
-          if(running_migrations?, do: migration_pool_size, else: "3")
+          if(running_migrations?, do: migration_pool_size, else: "25")
       ),
     queue_target:
       String.to_integer(
         System.get_env("DB_QUEUE_TARGET") ||
-          if(running_migrations?, do: migration_queue_target, else: "15000")
+          if(running_migrations?, do: migration_queue_target, else: "30000")
       ),
     queue_interval: String.to_integer(System.get_env("DB_QUEUE_INTERVAL") || "2000"),
     prepare: :unnamed,

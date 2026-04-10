@@ -78,16 +78,26 @@ defmodule NotificationService.Services.DeviceTokenService do
   end
 
   def list_recipient_user_ids(filters \\ %{}) do
-    filters = normalize_map(filters)
+    try do
+      filters = normalize_map(filters)
 
-    DeviceToken
-    |> where([dt], is_nil(dt.disabled_at))
-    |> maybe_filter(:user_type, filters["user_type"])
-    |> maybe_filter_platforms(filters["platforms"])
-    |> maybe_filter_interests(filters["interests"])
-    |> select([dt], dt.user_id)
-    |> distinct(true)
-    |> Repo.all()
+      DeviceToken
+      |> where([dt], is_nil(dt.disabled_at))
+      |> maybe_filter(:user_type, filters["user_type"])
+      |> maybe_filter_platforms(filters["platforms"])
+      |> maybe_filter_interests(filters["interests"])
+      |> select([dt], dt.user_id)
+      |> distinct(true)
+      |> Repo.all()
+    rescue
+      e in Ecto.QueryError ->
+        IO.error("Database query error in list_recipient_user_ids: #{inspect(e)}")
+        []
+
+      e ->
+        IO.error("Unexpected error in list_recipient_user_ids: #{inspect(e)}")
+        []
+    end
   end
 
   defp normalize_attrs(attrs) when is_map(attrs) do

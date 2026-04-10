@@ -37,26 +37,36 @@ defmodule NotificationService.Services.NotificationService do
     attrs = prepare_notification_attrs(attrs)
 
     recipients =
-      attrs
-      |> resolve_recipients()
-      |> Enum.uniq()
+      case resolve_recipients(attrs) do
+        {:ok, recipient_list} ->
+          recipient_list
+          |> Enum.uniq()
 
-    {successes, errors} =
-      Enum.reduce(recipients, {[], []}, fn user_id, {ok_acc, error_acc} ->
-        payload =
-          attrs
-          |> Map.drop(["user_ids", "targeting"])
-          |> Map.put("user_id", user_id)
+        {:error, reason} ->
+          IO.warn("Failed to resolve recipients: #{inspect(reason)}")
+          []
+      end
 
-        case create_notification(payload) do
-          {:ok, notification} -> {[notification | ok_acc], error_acc}
-          {:error, reason} -> {ok_acc, [reason | error_acc]}
-        end
-      end)
+    if Enum.empty?(recipients) do
+      {:error, "No recipients found for notification"}
+    else
+      {successes, errors} =
+        Enum.reduce(recipients, {[], []}, fn user_id, {ok_acc, error_acc} ->
+          payload =
+            attrs
+            |> Map.drop(["user_ids", "targeting"])
+            |> Map.put("user_id", user_id)
 
-    case {Enum.reverse(successes), Enum.reverse(errors)} do
-      {[], reasons} -> {:error, reasons}
-      {notifications, reasons} -> {:ok, %{notifications: notifications, errors: reasons, count: length(notifications)}}
+          case create_notification(payload) do
+            {:ok, notification} -> {[notification | ok_acc], error_acc}
+            {:error, reason} -> {ok_acc, [{user_id, reason} | error_acc]}
+          end
+        end)
+
+      case {Enum.reverse(successes), Enum.reverse(errors)} do
+        {[], reasons} -> {:error, reasons}
+        {notifications, reasons} -> {:ok, %{notifications: notifications, errors: reasons, count: length(notifications)}}
+      end
     end
   end
 
@@ -216,27 +226,47 @@ defmodule NotificationService.Services.NotificationService do
   defp prepare_notification_attrs(attrs), do: attrs
 
   defp resolve_recipients(attrs) do
-    direct_user_ids =
-      attrs
-      |> Map.get("user_ids", [])
-      |> List.wrap()
-      |> Enum.map(&to_string/1)
+    try do
+      direct_user_ids =
+        attrs
+        |> Map.get("user_ids", [])
+        |> List.wrap()
+        |> Enum.map(&to_string/1)
 
-    case direct_user_ids do
-      [] ->
-        case Map.get(attrs, "targeting") do
-          targeting when is_map(targeting) ->
-            DeviceTokenService.list_recipient_user_ids(targeting)
+      recipients =
+        case direct_user_ids do
+          [] ->
+            case Map.get(attrs, "targeting") do
+              targeting when is_map(targeting) ->
+                case DeviceTokenService.list_recipient_user_ids(targeting) do
+                  users when is_list(users) ->
+                    users
 
-          _ ->
-            case Map.get(attrs, "user_id") do
-              nil -> []
-              user_id -> [to_string(user_id)]
+                  error ->
+                    IO.warn("DeviceTokenService.list_recipient_user_ids failed: #{inspect(error)}")
+                    []
+                end
+
+              _ ->
+                case Map.get(attrs, "user_id") do
+                  nil -> []
+                  user_id -> [to_string(user_id)]
+                end
             end
+
+          values ->
+            values
         end
 
-      values ->
-        values
+      {:ok, recipients}
+    rescue
+      e in Ecto.QueryError ->
+        IO.error("Database query error in resolve_recipients: #{inspect(e)}")
+        {:error, "Database query failed"}
+
+      e ->
+        IO.error("Unexpected error in resolve_recipients: #{inspect(e)}")
+        {:error, "Failed to resolve recipients"}
     end
   end
 
