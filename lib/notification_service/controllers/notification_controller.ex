@@ -51,15 +51,22 @@ defmodule NotificationService.Controllers.NotificationController do
         _ -> %{}
       end
 
-    case NotificationService.broadcast_notifications(notification_params) do
+    case NotificationService.enqueue_broadcast_notifications(notification_params) do
       {:ok, result} ->
         conn
         |> put_status(:created)
         |> json(%{
           count: result.count,
-          notification_ids: Enum.map(result.notifications, & &1.id),
-          errors: result.errors
+          notification_ids: [],
+          errors: result.errors,
+          status: "queued",
+          job_id: result.job_id
         })
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{errors: translate_errors(changeset)})
 
       {:error, reasons} ->
         conn

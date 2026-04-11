@@ -4,6 +4,8 @@ defmodule NotificationService.Services.DeviceTokenService do
   alias NotificationService.Models.DeviceToken
   alias NotificationService.Repo
 
+  require Logger
+
   def register_device(user_id, attrs) do
     params =
       attrs
@@ -38,20 +40,22 @@ defmodule NotificationService.Services.DeviceTokenService do
   end
 
   def get_user_tokens(user_id) do
-    Repo.all(from dt in DeviceToken, where: dt.user_id == ^user_id)
+    Repo.all(from(dt in DeviceToken, where: dt.user_id == ^user_id))
   end
 
   def get_active_user_tokens(user_id) do
     Repo.all(
-      from dt in DeviceToken,
+      from(dt in DeviceToken,
         where: dt.user_id == ^user_id and is_nil(dt.disabled_at)
+      )
     )
   end
 
   def get_active_token(id) do
     Repo.one(
-      from dt in DeviceToken,
+      from(dt in DeviceToken,
         where: dt.id == ^id and is_nil(dt.disabled_at)
+      )
     )
   end
 
@@ -91,11 +95,11 @@ defmodule NotificationService.Services.DeviceTokenService do
       |> Repo.all()
     rescue
       e in Ecto.QueryError ->
-        IO.error("Database query error in list_recipient_user_ids: #{inspect(e)}")
+        Logger.error("Database query error in list_recipient_user_ids: #{inspect(e)}")
         []
 
       e ->
-        IO.error("Unexpected error in list_recipient_user_ids: #{inspect(e)}")
+        Logger.error("Unexpected error in list_recipient_user_ids: #{inspect(e)}")
         []
     end
   end

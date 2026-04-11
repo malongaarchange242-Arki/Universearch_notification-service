@@ -4,8 +4,11 @@ defmodule NotificationService.Services.NotificationService do
   alias NotificationService.Repo
   alias NotificationService.Services.DeviceTokenService
   alias NotificationService.Services.NotificationEventService
+  alias NotificationService.Workers.NotificationBroadcastWorker
 
   import Ecto.Query
+
+  require Logger
 
   def list_notifications do
     Repo.all(Notification)
@@ -64,9 +67,38 @@ defmodule NotificationService.Services.NotificationService do
         end)
 
       case {Enum.reverse(successes), Enum.reverse(errors)} do
-        {[], reasons} -> {:error, reasons}
-        {notifications, reasons} -> {:ok, %{notifications: notifications, errors: reasons, count: length(notifications)}}
+        {[], reasons} ->
+          {:error, reasons}
+
+        {notifications, reasons} ->
+          {:ok, %{notifications: notifications, errors: reasons, count: length(notifications)}}
       end
+    end
+  end
+
+  def enqueue_broadcast_notifications(attrs) do
+    attrs = prepare_notification_attrs(attrs)
+
+    with {:ok, recipients} <- resolve_recipients(attrs),
+         unique_recipients <- recipients |> Enum.map(&to_string/1) |> Enum.uniq(),
+         false <- Enum.empty?(unique_recipients),
+         job_attrs <- attrs |> Map.put("user_ids", unique_recipients) |> Map.delete("targeting"),
+         {:ok, job} <-
+           job_attrs
+           |> NotificationBroadcastWorker.new(priority: oban_priority(attrs["priority"]))
+           |> Oban.insert() do
+      {:ok,
+       %{
+         job_id: job.id,
+         count: length(unique_recipients),
+         errors: []
+       }}
+    else
+      true ->
+        {:error, "No recipients found for notification"}
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -115,7 +147,9 @@ defmodule NotificationService.Services.NotificationService do
   end
 
   def get_user_notifications(user_id) do
-    Repo.all(from n in Notification, where: n.user_id == ^user_id, order_by: [desc: n.inserted_at])
+    Repo.all(
+      from(n in Notification, where: n.user_id == ^user_id, order_by: [desc: n.inserted_at])
+    )
   end
 
   def get_device_tokens(user_id) do
@@ -243,7 +277,10 @@ defmodule NotificationService.Services.NotificationService do
                     users
 
                   error ->
-                    IO.warn("DeviceTokenService.list_recipient_user_ids failed: #{inspect(error)}")
+                    IO.warn(
+                      "DeviceTokenService.list_recipient_user_ids failed: #{inspect(error)}"
+                    )
+
                     []
                 end
 
@@ -261,11 +298,11 @@ defmodule NotificationService.Services.NotificationService do
       {:ok, recipients}
     rescue
       e in Ecto.QueryError ->
-        IO.error("Database query error in resolve_recipients: #{inspect(e)}")
+        Logger.error("Database query error in resolve_recipients: #{inspect(e)}")
         {:error, "Database query failed"}
 
       e ->
-        IO.error("Unexpected error in resolve_recipients: #{inspect(e)}")
+        Logger.error("Unexpected error in resolve_recipients: #{inspect(e)}")
         {:error, "Failed to resolve recipients"}
     end
   end
