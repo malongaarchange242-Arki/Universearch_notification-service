@@ -146,6 +146,45 @@ defmodule NotificationService.Services.NotificationService do
     end
   end
 
+  def delete_notification(notification_id, user_id) do
+    case Repo.get(Notification, notification_id) do
+      nil ->
+        {:error, :not_found}
+
+      notification ->
+        if notification.user_id != user_id do
+          {:error, :unauthorized}
+        else
+          with {:ok, deleted_notification} <- Repo.delete(notification) do
+            if !notification.read do
+              decrement_unread_count(user_id)
+            end
+
+            {:ok, deleted_notification}
+          end
+        end
+    end
+  end
+
+  def delete_all_notifications(user_id) do
+    unread_notifications_query =
+      from(n in Notification,
+        where: n.user_id == ^user_id and n.read == false
+      )
+
+    unread_count = Repo.aggregate(unread_notifications_query, :count, :id)
+
+    {deleted_count, _} =
+      from(n in Notification, where: n.user_id == ^user_id)
+      |> Repo.delete_all()
+
+    if unread_count > 0 do
+      reset_unread_count(user_id)
+    end
+
+    {:ok, deleted_count}
+  end
+
   def get_user_notifications(user_id) do
     Repo.all(
       from(n in Notification, where: n.user_id == ^user_id, order_by: [desc: n.inserted_at])
@@ -205,6 +244,11 @@ defmodule NotificationService.Services.NotificationService do
   defp decrement_unread_count(user_id) do
     from(s in UserNotificationStats, where: s.user_id == ^user_id)
     |> Repo.update_all(inc: [unread_count: -1])
+  end
+
+  defp reset_unread_count(user_id) do
+    from(s in UserNotificationStats, where: s.user_id == ^user_id)
+    |> Repo.update_all(set: [unread_count: 0])
   end
 
   # Fallback method to sync stats table (run periodically)

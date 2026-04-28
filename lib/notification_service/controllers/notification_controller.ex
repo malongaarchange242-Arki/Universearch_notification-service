@@ -102,6 +102,37 @@ defmodule NotificationService.Controllers.NotificationController do
     end
   end
 
+  def delete(conn, %{"id" => notification_id}) do
+    user_id = conn.assigns[:current_user_id]
+
+    case NotificationService.delete_notification(notification_id, user_id) do
+      {:ok, notification} ->
+        json(conn, %{notification: notification})
+
+      {:error, :not_found} ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "Notification not found"})
+
+      {:error, :unauthorized} ->
+        conn
+        |> put_status(:forbidden)
+        |> json(%{error: "Unauthorized"})
+
+      {:error, reason} ->
+        conn
+        |> put_status(:unprocessable_entity)
+        |> json(%{error: reason})
+    end
+  end
+
+  def delete_all(conn, _params) do
+    user_id = conn.assigns[:current_user_id]
+
+    {:ok, count} = NotificationService.delete_all_notifications(user_id)
+    json(conn, %{deleted_count: count})
+  end
+
   defp translate_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
       Enum.reduce(opts, msg, fn {key, value}, acc ->
