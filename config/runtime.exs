@@ -104,4 +104,4 @@ config :notification_service, NotificationService.Push.Providers.FCMV1,
   credentials_path: System.get_env("GOOGLE_APPLICATION_CREDENTIALS"),
   notification_image_url:
     System.get_env("FCM_NOTIFICATION_IMAGE_URL") ||
-      "https://universearch-notification-service.onrender.com/images/universearch-notification-logo.png"
+      "https://universearch-notification-service-3zw2.onrender.com/images/universearch-notification-logo.png"
