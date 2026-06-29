@@ -19,14 +19,17 @@ defmodule NotificationServiceWeb.Router do
 
     get("/", NotificationService.Controllers.HealthController, :index)
     get("/health", NotificationService.Controllers.HealthController, :check)
+    head("/health", NotificationService.Controllers.HealthController, :check)
   end
 
   scope "/api" do
     pipe_through(:api)
 
     get("/health", NotificationService.Controllers.HealthController, :check)
+    head("/health", NotificationService.Controllers.HealthController, :check)
     post("/health", NotificationService.Controllers.HealthController, :check)
     get("/notifications/health", NotificationService.Controllers.HealthController, :check)
+    head("/notifications/health", NotificationService.Controllers.HealthController, :check)
     post("/notifications", NotificationService.Controllers.NotificationController, :create)
 
     post(
