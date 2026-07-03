@@ -13,6 +13,7 @@ defmodule NotificationServiceWeb.Endpoint do
 
   plug Plug.RequestId
   plug Plug.Logger
+  plug CORSPlug, origins: ["http://127.0.0.1:5502", "https://universearch-frontend.onrender.com/",  "http://localhost:5502", "http://127.0.0.1:5500", "http://localhost:5500", "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost", "http://127.0.0.1"], methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], headers: ["authorization", "content-type", "accept"], credentials: false
 
   plug Plug.Parsers,
     parsers: [:json],
